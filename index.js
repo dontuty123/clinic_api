@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const dotenv= require('dotenv');
 const PORT_SERVER = 5000;
+
 const mongoose = require('mongoose');
 const userRoute = require('./route/user');
 const medicineRoute = require('./route/medince');
@@ -32,11 +33,11 @@ app.use(express.json());
 
 
 app.use("/api/users", userRoute);
-app.use("/api/medicine", medicineRoute);
-app.use("/api/role", roleRoute);
-app.use("/api/activity", activityRoute);
-app.use("/api/consulation", consulationRoute);
-app.use("/api/patient", patientRoute);
+// app.use("/api/medicine", medicineRoute);
+// app.use("/api/role", roleRoute);
+// app.use("/api/activity", activityRoute);
+// app.use("/api/consulation", consulationRoute);
+// app.use("/api/patient", patientRoute);
 
 
 
