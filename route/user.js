@@ -145,43 +145,63 @@ router.delete("/:id", async (req, res) => {
   const Ids = req.body.id;
   let deleteUser;
 
-  if (typeof Ids == "string") {
-    deleteUser = await User.deleteOne({
-      status: { $eq: "Inactive" },
-      _id: { $eq: convertId(Ids) },
-    });
-  }
+  try {
+    if (typeof Ids == "string") {
+      deleteUser = await User.deleteOne({
+        status: { $eq: "Inactive" },
+        _id: { $eq: convertId(Ids) },
+      });
+    }
 
-  if (Array.isArray(Ids)) {
-    const InactiveIds = await User.aggregate([
-      {
-        $match: {
-          $and: [{ _id: { $in: convertManyId(Ids) } }, { status: "Inactive" }],
+    if (Array.isArray(Ids)) {
+      const InactiveIds = await User.aggregate([
+        {
+          $match: {
+            $and: [
+              { _id: { $in: convertManyId(Ids) } },
+              { status: "Inactive" },
+            ],
+          },
         },
-      },
-      {
-        $project: {
-          _id: 1,
+        {
+          $project: {
+            _id: 1,
+          },
         },
-      },
-    ]);
+      ]);
 
-    deleteUser = await User.deleteMany({
-      _id: { $in: InactiveIds },
-    });
-  }
-  console.log(">>>>>>> deleteUser", deleteUser);
+      deleteUser = await User.deleteMany({
+        _id: { $in: InactiveIds },
+      });
+    }
+    console.log(">>>>>>> deleteUser", deleteUser);
 
-  if (deleteUser?.deletedCount > 0) {
-    res.send(Response(200, "delete user success"));
-  } else {
-    res.send(Response(400, "delete user unsuccess"));
+    if (deleteUser?.deletedCount > 0) {
+      res.send(Response(200, "delete user success"));
+    } else {
+      res.send(Response(400, "delete user unsuccess"));
+    }
+  } catch (e) {
+    Response(500, "internal sever", e);
   }
 });
 
 // /// update user
-// router.put("/:id", async (req, res) => {
+router.put("/:id", async (req, res) => {
+  let updateUser;
 
-// });
+  try {
+    updateUser = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: req.body,
+      },
+      { new: true }
+    );
+    res.send(Response(200, "Update user success", updateUser));
+  } catch (e) {
+    Response(500, "internal sever", e);
+  }
+});
 
 module.exports = router;
