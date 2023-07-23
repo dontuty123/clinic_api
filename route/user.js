@@ -9,10 +9,14 @@ const {
   Response,
   convertId,
   convertManyId,
+  generateToken
 } = require("../util");
+
+const { set, get, isExist } = require("../request/redis")
 
 let CachedMemoized = {};
 let debounce;
+
 const keyRequires = [
   "password",
   "fullName",
@@ -24,15 +28,13 @@ const keyRequires = [
 ];
 
 ///register
-router.post("/register", checkHeaderConfig, async (req, res) => {
+router.post("/register", async (req, res) => {
   const body = req.body;
   const detechDevice = req.header("access-device");
   let time = CachedMemoized[detechDevice] ? 300 : 0;
-
   time && clearTimeout(debounce);
   debounce = setTimeout(async () => {
     try {
-      console.log(Object.keys(body));
       for (let i = 0; i < keyRequires.length; i++) {
         if (!Object.keys(body).includes(keyRequires[i])) {
           res.send(Response(400, "Some key require"));
@@ -59,6 +61,7 @@ router.post("/register", checkHeaderConfig, async (req, res) => {
       const newUser = await User.create({ ...body });
       if (newUser) {
         CachedMemoized[detechDevice] = true;
+        await cached.del('usersCached');
         res.send(Response(200, "Create user success"));
       } else {
         res.send(Response(500, "Internal Server !"));
@@ -70,7 +73,7 @@ router.post("/register", checkHeaderConfig, async (req, res) => {
 });
 
 /// login
-router.post("/login", checkHeaderConfig, async (req, res) => {
+router.post("/login", async (req, res) => {
   const { username, password } = req.body;
 
   try {
@@ -83,10 +86,18 @@ router.post("/login", checkHeaderConfig, async (req, res) => {
           ],
         },
       },
+      {
+        $project: {
+            createdAt: 0,
+            updatedAt: 0,
+        }
+      }
     ]);
 
     if (checkUser.length > 0) {
-      res.send(Response(200, "Login success", checkUser[0]));
+        const response = checkUser[0];
+        response.token = await generateToken();
+      res.send(Response(200, "Login success", response));
     } else {
       res.send(Response(404, "Username or password incorrect"));
     }
@@ -98,8 +109,12 @@ router.post("/login", checkHeaderConfig, async (req, res) => {
 // /// get list and search
 router.post("/full/s", checkHeaderConfig, async (req, res) => {
   const search = req.body?.search || req.query?.search || "";
+  const isCached =  await cached.exists('usersCached');
 
-  console.log("running");
+  if(!search && isCached) {
+        const response = await cached.get('usersCached');
+        res.send(Response(200, "Get user success", JSON.parse(response)));
+  }
 
   const isSelectMode = req.body?.isSelectMode;
   const project = isSelectMode
@@ -116,7 +131,6 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
 
   const regexPattern = getRegexPatternSearch(search) || "";
   try {
-    console.log("running");
     const response = await User.aggregate([
       {
         $match: {
@@ -133,7 +147,8 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
     ]);
     console.log("running");
     if (response?.length > 0) {
-      res.send(Response(200, "Get user success", response));
+        await cached.set('usersCached',JSON.stringify(response));
+        res.send(Response(200, "Get user success", response));
     } else {
       res.send(Response(400, "No user found"));
     }
@@ -141,7 +156,7 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
 });
 
 /// remove user
-router.delete("/:id", async (req, res) => {
+router.delete("/:id",checkHeaderConfig, async (req, res) => {
   const Ids = req.body.id;
   let deleteUser;
 
@@ -170,20 +185,18 @@ router.delete("/:id", async (req, res) => {
         },
       ]);
 
-      deleteUser = await User.deleteMany({
-        _id: { $in: InactiveIds },
-      });
-    }
-    console.log(">>>>>>> deleteUser", deleteUser);
-
-    if (deleteUser?.deletedCount > 0) {
-      res.send(Response(200, "delete user success"));
-    } else {
-      res.send(Response(400, "delete user unsuccess"));
-    }
-  } catch (e) {
-    Response(500, "internal sever", e);
+    deleteUser = await User.deleteMany({
+      _id: { $in: InactiveIds },
+    });
   }
+
+  if (deleteUser?.deletedCount > 0) {
+    await cached.del('usersCached');
+    res.send(Response(200, "delete user success"));
+  } else {
+    res.send(Response(400, "delete user unsuccess"));
+  }
+  }catch(e){}
 });
 
 // /// update user

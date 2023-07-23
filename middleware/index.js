@@ -10,6 +10,8 @@ const checkHeaderConfig = (req, res, next) => {
     next();
 }
 
+
+
 module.exports = {
     checkHeaderConfig
 };

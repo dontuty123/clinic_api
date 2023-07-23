@@ -1,6 +1,9 @@
 /** @format */
 
+const { log } = require("console");
 var mongoose = require("mongoose");
+const util = require('util');
+const exec = util.promisify(require('child_process').exec);
 
 const regexPattern = {
   a: "[a|ă|â|á|à|ạ|ả|ã|ẫ|ẩ|ắ|ặc|ằc|ấ|ầ|ậ|A|Ă|Â|Á|À|Ạ|Ả|Ã|Ẫ|Ẩ|Ắ|ẶC|ẰC|Ấ|Ầ|Ậ]{0,}",
@@ -53,9 +56,16 @@ const convertManyId = (arr = []) => {
   return rs;
 };
 
+const generateToken = async (range = 32) => {
+    const { stdout } = await exec(`openssl rand -base64 ${range}`);
+    return `user-${stdout}`
+
+}
+
 module.exports = {
   getRegexPatternSearch,
   Response,
   convertId,
   convertManyId,
+  generateToken
 };

@@ -4,6 +4,11 @@ const express = require("express");
 const app = express();
 const dotenv = require("dotenv");
 const PORT_SERVER = 5000;
+const Redis = require('redis')
+const client = Redis.createClient();
+client.exists
+client.connect();
+global.cached = client;
 
 const mongoose = require("mongoose");
 const userRoute = require("./route/user");
@@ -24,7 +29,7 @@ mongoose
     console.log(err);
   });
 
-app.listen(PORT_SERVER, () => {
+app.listen(PORT_SERVER, async () => {
   console.log(`Example app listening on port ${PORT_SERVER}`);
 });
 
