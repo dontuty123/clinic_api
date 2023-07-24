@@ -6,7 +6,8 @@ const dotenv = require("dotenv");
 const PORT_SERVER = 5000;
 const Redis = require("redis");
 const client = Redis.createClient();
-client.exists;
+// client.exists;
+// client.set(1,1,1)
 client.connect();
 global.cached = client;
 
