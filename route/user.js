@@ -230,4 +230,16 @@ router.put("/:id", checkHeaderConfig, getUser, async (req, res) => {
   }
 });
 
+// /// update user
+router.post("/logout", checkHeaderConfig, getUser, async (req, res) => {
+  const token = req.body.token;
+  if(!token) {
+    res.send(Response(400, "Token Required", false));
+  }
+  const delCached = await cached.del(token);
+  if(delCached) {
+    res.send(Response(200, "Suceessfully", true));
+  }
+});
+
 module.exports = router;
