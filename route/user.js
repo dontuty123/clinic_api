@@ -3,7 +3,7 @@
 const User = require("../model/user");
 const express = require("express");
 const router = express.Router();
-const { checkHeaderConfig } = require("../middleware");
+const { checkHeaderConfig, getUser } = require("../middleware");
 const {
   getRegexPatternSearch,
   Response,
@@ -96,8 +96,15 @@ router.post("/login", async (req, res) => {
 
     if (checkUser.length > 0) {
         const response = checkUser[0];
-        response.token = await generateToken();
-      res.send(Response(200, "Login success", response));
+        const key = await generateToken();
+        console.log('key', key); 
+        if(key) {
+          response.token =key;
+          const a = await cached.set(key, JSON.stringify(response));
+          if(a) {
+            res.send(Response(200, "Login success", response));
+          }
+        }
     } else {
       res.send(Response(404, "Username or password incorrect"));
     }
@@ -107,9 +114,12 @@ router.post("/login", async (req, res) => {
 });
 
 // /// get list and search
-router.post("/full/s", checkHeaderConfig, async (req, res) => {
+router.post("/full/s", checkHeaderConfig, getUser, async (req, res) => {
   const search = req.body?.search || req.query?.search || "";
   const isCached =  await cached.exists('usersCached');
+
+
+  console.log('req', req.socket.localAddress);
 
   if(!search && isCached) {
         const response = await cached.get('usersCached');
@@ -156,7 +166,7 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
 });
 
 /// remove user
-router.delete("/:id",checkHeaderConfig, async (req, res) => {
+router.delete("/:id",checkHeaderConfig, getUser , async (req, res) => {
   const Ids = req.body.id;
   let deleteUser;
 
@@ -200,20 +210,20 @@ router.delete("/:id",checkHeaderConfig, async (req, res) => {
 });
 
 // /// update user
-router.put("/:id", async (req, res) => {
-  let updateUser;
-
+router.put("/:id", checkHeaderConfig, getUser ,async (req, res) => {
   try {
-    updateUser = await User.findByIdAndUpdate(
+    const updateUser = await User.findByIdAndUpdate(
       req.params.id,
       {
         $set: req.body,
       },
       { new: true }
     );
-    res.send(Response(200, "Update user success", updateUser));
+    if(updateUser) {
+      res.send(Response(200, "Update user success"));
+    }
   } catch (e) {
-    Response(500, "internal sever", e);
+    Response(500, "Internal sever", e);
   }
 });
 

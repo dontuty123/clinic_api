@@ -11,7 +11,28 @@ const checkHeaderConfig = (req, res, next) => {
 }
 
 
+const getUser =  async (req, res, next) => {
+    const token = req.header("user-token");
+    if(!token) {
+        res.send("Dit me may");
+        res.end();
+        return;
+    }
+    let user = await cached.get(token);
+    user ? JSON.parse(user) : false;
+    if(!user) {
+        res.send("Dit me may");
+        res.end();
+        return;
+    };
+    req.userInfo = user;
+    next(); 
+}
+
+
+
 
 module.exports = {
-    checkHeaderConfig
+    checkHeaderConfig,
+    getUser
 };
