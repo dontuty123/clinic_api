@@ -16,14 +16,14 @@
 #   done
 
 for((i = 0; i < 2000; i++)); do
-curl -s -L -X POST "localhost:5000/api/medicine/add" \
+curl -s -L -X POST "localhost:5000/api/medicines/add" \
 -H "access-device: 123123" \
--H "user-token: 123123" \
+-H "user-token: b4af5e6e3a9e21e81f22cc33" \
 -H "Content-Type: application/json" \
 --data-raw "{
-    \"name\":\"ss${i}\",
+    \"name\":\"ssss${i}\",
     \"typeMedicineIds\":\"headed\",
-    \"entryPrice\": 100000,
+    \"entryPrice\": 5,
     \"unit\": 1000
 }" \
 --compressed & 

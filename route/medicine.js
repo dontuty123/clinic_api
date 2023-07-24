@@ -11,7 +11,6 @@ const {
   convertManyId,
 } = require("../util");
 
-// const { set, get, isExist } = require("../request/redis");
 const keyRequires = ["name", "typeMedicineIds", "entryPrice", "unit"];
 let CachedMemoized = {};
 let debounce;
@@ -60,18 +59,20 @@ router.post("/add", async (req, res) => {
 router.post("/full/s", checkHeaderConfig, async (req, res) => {
   const name = req.body?.name || req.query?.name || "";
   const priceFrom = req.body?.priceFrom || req.query?.priceFrom || 0;
-  const priceTo = req.body?.priceTo || req.query?.priceTo || 0;
-  // const isCached = await cached.exists("MedicinesCached");
+  const priceTo =
+    req.body?.priceTo ||
+    req.query?.priceTo ||
+    new Intl.NumberFormat().format(3000000000);
+  const cachedKeyFromClient = req.body.cachedKey || "";
 
-  console.log("priceFrom", priceFrom);
-  console.log("priceTo", priceTo);
+  const isCached = await cached.exists(cachedKeyFromClient);
 
-  // if (!search && isCached) {
-  //   const response = await cached.get("MedicinesCached");
-  //   res.send(Response(200, "Get medicine success", JSON.parse(response)));
-  // }
+  if (isCached) {
+    const response = await cached.get(cachedKeyFromClient);
+    res.send(Response(200, "Get medicine success", JSON.parse(response)));
+  }
 
-  ////////
+  //
   const isSelectMode = req.body?.isSelectMode;
   const project = isSelectMode
     ? {
@@ -89,21 +90,16 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
     const response = await Medicine.aggregate([
       {
         $match: {
-          $or: [
-            { name: { $regex: regexName, $options: "i" } },
+          $and: [
             {
-              entryPrice: { $or: { $range: [priceFrom, priceTo] } },
-
-              // range: {
-              //   $range: [
-              //     { priceFrom: { $regex: regexPattern, $options: 1 } },
-              //     { priceTo: { $regex: regexPattern, $options: 1 } },
-              //     ,
-              //     1,
-              //   ],
-              // },
+              $expr: {
+                $and: [
+                  { $gte: ["$entryPrice", priceFrom] },
+                  { $lte: ["$entryPrice", priceTo] },
+                ],
+              },
             },
-            // {name : {$regex: regexPattern}},
+            { name: { $regex: regexName, $options: "i" } },
           ],
         },
       },
@@ -113,8 +109,14 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
     ]);
     console.log("response", response);
     if (response?.length > 0) {
-      // await cached.set("MedicinesCached", JSON.stringify(response));
-      res.send(Response(200, "Get Medicine success", response));
+      const cachedKey = name + (priceFrom + "") + (priceTo + "");
+      await cached.set(cachedKey, JSON.stringify(response), {
+        EX: 10,
+        NX: true,
+      });
+      res.send(
+        Response(200, "Get Medicine success", { ...response, cachedKey })
+      );
     } else {
       res.send(Response(400, "No Medicine found"));
     }
