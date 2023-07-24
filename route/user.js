@@ -9,10 +9,10 @@ const {
   Response,
   convertId,
   convertManyId,
-  generateToken
+  generateToken,
 } = require("../util");
 
-const { set, get, isExist } = require("../request/redis")
+// const { set, get, isExist } = require("../request/redis");
 
 let CachedMemoized = {};
 let debounce;
@@ -61,7 +61,7 @@ router.post("/register", async (req, res) => {
       const newUser = await User.create({ ...body });
       if (newUser) {
         CachedMemoized[detechDevice] = true;
-        await cached.del('usersCached');
+        await cached.del("usersCached");
         res.send(Response(200, "Create user success"));
       } else {
         res.send(Response(500, "Internal Server !"));
@@ -88,15 +88,15 @@ router.post("/login", async (req, res) => {
       },
       {
         $project: {
-            createdAt: 0,
-            updatedAt: 0,
-        }
-      }
+          createdAt: 0,
+          updatedAt: 0,
+        },
+      },
     ]);
 
     if (checkUser.length > 0) {
-        const response = checkUser[0];
-        response.token = await generateToken();
+      const response = checkUser[0];
+      response.token = await generateToken();
       res.send(Response(200, "Login success", response));
     } else {
       res.send(Response(404, "Username or password incorrect"));
@@ -109,11 +109,11 @@ router.post("/login", async (req, res) => {
 // /// get list and search
 router.post("/full/s", checkHeaderConfig, async (req, res) => {
   const search = req.body?.search || req.query?.search || "";
-  const isCached =  await cached.exists('usersCached');
+  const isCached = await cached.exists("usersCached");
 
-  if(!search && isCached) {
-        const response = await cached.get('usersCached');
-        res.send(Response(200, "Get user success", JSON.parse(response)));
+  if (!search && isCached) {
+    const response = await cached.get("usersCached");
+    res.send(Response(200, "Get user success", JSON.parse(response)));
   }
 
   const isSelectMode = req.body?.isSelectMode;
@@ -147,8 +147,8 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
     ]);
     console.log("running");
     if (response?.length > 0) {
-        await cached.set('usersCached',JSON.stringify(response));
-        res.send(Response(200, "Get user success", response));
+      await cached.set("usersCached", JSON.stringify(response));
+      res.send(Response(200, "Get user success", response));
     } else {
       res.send(Response(400, "No user found"));
     }
@@ -156,7 +156,7 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
 });
 
 /// remove user
-router.delete("/:id",checkHeaderConfig, async (req, res) => {
+router.delete("/:id", checkHeaderConfig, async (req, res) => {
   const Ids = req.body.id;
   let deleteUser;
 
@@ -185,18 +185,18 @@ router.delete("/:id",checkHeaderConfig, async (req, res) => {
         },
       ]);
 
-    deleteUser = await User.deleteMany({
-      _id: { $in: InactiveIds },
-    });
-  }
+      deleteUser = await User.deleteMany({
+        _id: { $in: InactiveIds },
+      });
+    }
 
-  if (deleteUser?.deletedCount > 0) {
-    await cached.del('usersCached');
-    res.send(Response(200, "delete user success"));
-  } else {
-    res.send(Response(400, "delete user unsuccess"));
-  }
-  }catch(e){}
+    if (deleteUser?.deletedCount > 0) {
+      await cached.del("usersCached");
+      res.send(Response(200, "delete user success"));
+    } else {
+      res.send(Response(400, "delete user unsuccess"));
+    }
+  } catch (e) {}
 });
 
 // /// update user
