@@ -75,10 +75,6 @@ router.post("/register", async (req, res) => {
 /// login
 router.post("/login", async (req, res) => {
   const { username, password } = req.body;
-
-  console.log("username", username);
-  console.log("password", password);
-
   try {
     const checkUser = await User.aggregate([
       {
@@ -121,9 +117,6 @@ router.post("/login", async (req, res) => {
 router.post("/full/s", checkHeaderConfig, getUser, async (req, res) => {
   const search = req.body?.search || req.query?.search || "";
   const isCached = await cached.exists("usersCached");
-
-  console.log("req", req.socket.localAddress);
-
   if (!search && isCached) {
     const response = await cached.get("usersCached");
     res.send(Response(200, "Get user success", JSON.parse(response)));
@@ -158,7 +151,6 @@ router.post("/full/s", checkHeaderConfig, getUser, async (req, res) => {
         $project: project,
       },
     ]);
-    console.log("running");
     if (response?.length > 0) {
       await cached.set("usersCached", JSON.stringify(response));
       res.send(Response(200, "Get user success", response));
@@ -233,11 +225,11 @@ router.put("/:id", checkHeaderConfig, getUser, async (req, res) => {
 // /// update user
 router.post("/logout", checkHeaderConfig, getUser, async (req, res) => {
   const token = req.body.token;
-  if(!token) {
+  if (!token) {
     res.send(Response(400, "Token Required", false));
   }
   const delCached = await cached.del(token);
-  if(delCached) {
+  if (delCached) {
     res.send(Response(200, "Suceessfully", true));
   }
 });

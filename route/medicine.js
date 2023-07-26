@@ -111,7 +111,7 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
     if (response?.length > 0) {
       const cachedKey = name + (priceFrom + "") + (priceTo + "");
       await cached.set(cachedKey, JSON.stringify(response), {
-        EX: 10,
+        EX: 86400,
         NX: true,
       });
       res.send(
@@ -124,65 +124,60 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
 });
 
 /// remove Medicine
-// router.delete("/:id", checkHeaderConfig, async (req, res) => {
-//   const Ids = req.body.id;
-//   let deleteMedicine;
+router.delete("/:id", checkHeaderConfig, async (req, res) => {
+  const Ids = req.body.id;
+  let deleteMedicine;
 
-//   try {
-//     if (typeof Ids == "string") {
-//       deleteMedicine = await Medicine.deleteOne({
-//         status: { $eq: "Inactive" },
-//         _id: { $eq: convertId(Ids) },
-//       });
-//     }
+  try {
+    if (typeof Ids == "string") {
+      deleteMedicine = await Medicine.deleteOne({
+        _id: { $eq: convertId(Ids) },
+      });
+    }
 
-//     if (Array.isArray(Ids)) {
-//       const InactiveIds = await Medicine.aggregate([
-//         {
-//           $match: {
-//             $and: [
-//               { _id: { $in: convertManyId(Ids) } },
-//               { status: "Inactive" },
-//             ],
-//           },
-//         },
-//         {
-//           $project: {
-//             _id: 1,
-//           },
-//         },
-//       ]);
+    if (Array.isArray(Ids)) {
+      const InactiveIds = await Medicine.aggregate([
+        {
+          $match: {
+            $and: [{ _id: { $in: convertManyId(Ids) } }],
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+          },
+        },
+      ]);
 
-//       deleteMedicine = await Medicine.deleteMany({
-//         _id: { $in: InactiveIds },
-//       });
-//     }
+      deleteMedicine = await Medicine.deleteMany({
+        _id: { $in: InactiveIds },
+      });
+    }
+    console.log(deleteMedicine);
 
-//     if (deleteMedicine?.deletedCount > 0) {
-//       await cached.del("MedicinesCached");
-//       res.send(Response(200, "delete Medicine success"));
-//     } else {
-//       res.send(Response(400, "delete Medicine unsuccess"));
-//     }
-//   } catch (e) {}
-// });
+    if (deleteMedicine?.deletedCount > 0) {
+      res.send(Response(200, "delete Medicine success"));
+    } else {
+      res.send(Response(400, "delete Medicine unsuccess"));
+    }
+  } catch (e) {}
+});
 
 // // /// update Medicine
-// router.put("/:id", async (req, res) => {
-//   let updateMedicine;
-
-//   try {
-//     updateMedicine = await Medicine.findByIdAndUpdate(
-//       req.params.id,
-//       {
-//         $set: req.body,
-//       },
-//       { new: true }
-//     );
-//     res.send(Response(200, "Update Medicine success", updateMedicine));
-//   } catch (e) {
-//     Response(500, "internal sever", e);
-//   }
-// });
+router.put("/:id", async (req, res) => {
+  let updateMedicine;
+  try {
+    updateMedicine = await Medicine.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: req.body,
+      },
+      { new: true }
+    );
+    res.send(Response(200, "Update Medicine success", updateMedicine));
+  } catch (e) {
+    Response(500, "internal sever", e);
+  }
+});
 
 module.exports = router;
