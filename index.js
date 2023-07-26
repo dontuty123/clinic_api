@@ -19,9 +19,13 @@ const activityRoute = require("./route/activity");
 const consultationRoute = require("./route/consultation");
 const patientRoute = require("./route/patient");
 
+const { getLog, checkHeaderConfig, getUser } = require("./middleware");
+
 // const PORT_SOCKET = 5500;
 
 dotenv.config();
+
+console.log(">>>>>>>>>>>>>>>>", process.pid)
 
 mongoose
   .connect(process.env.APP_DATABASE_URL)
@@ -41,8 +45,12 @@ app.get("/", (req, res) => {
 app.use(express.json());
 
 app.use("/api/users", userRoute);
-app.use("/api/medicines", medicineRoute);
+app.use("/api/medicines", checkHeaderConfig, getUser, getLog,  medicineRoute);
 // app.use("/api/role", roleRoute);
 // app.use("/api/activity", activityRoute);
 // app.use("/api/consultation", consultationRoute);
 // app.use("/api/patient", patientRoute);
+
+
+
+
