@@ -4,23 +4,28 @@ const express = require("express");
 const app = express();
 const dotenv = require("dotenv");
 const PORT_SERVER = 5000;
-const Redis = require('redis')
+const Redis = require("redis");
 const client = Redis.createClient();
-client.exists
+// client.exists;
+// client.set(1,1,1)
 client.connect();
 global.cached = client;
 
 const mongoose = require("mongoose");
 const userRoute = require("./route/user");
-const medicineRoute = require("./route/medince");
+const medicineRoute = require("./route/medicine");
 const roleRoute = require("./route/role");
-const activityRoute = require("./route/acitvity");
-const consulationRoute = require("./route/consulation");
+const activityRoute = require("./route/activity");
+const consultationRoute = require("./route/consultation");
 const patientRoute = require("./route/patient");
+
+const { getLog, checkHeaderConfig, getUser } = require("./middleware");
 
 // const PORT_SOCKET = 5500;
 
 dotenv.config();
+
+console.log(">>>>>>>>>>>>>>>>", process.pid)
 
 mongoose
   .connect(process.env.APP_DATABASE_URL)
@@ -40,8 +45,12 @@ app.get("/", (req, res) => {
 app.use(express.json());
 
 app.use("/api/users", userRoute);
-// app.use("/api/medicine", medicineRoute);
+app.use("/api/medicines", checkHeaderConfig, getUser, getLog,  medicineRoute);
 // app.use("/api/role", roleRoute);
 // app.use("/api/activity", activityRoute);
-// app.use("/api/consulation", consulationRoute);
+// app.use("/api/consultation", consultationRoute);
 // app.use("/api/patient", patientRoute);
+
+
+
+

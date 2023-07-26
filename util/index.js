@@ -56,10 +56,9 @@ const convertManyId = (arr = []) => {
   return rs;
 };
 
-const generateToken = async (range = 32) => {
-    const { stdout } = await exec(`openssl rand -base64 ${range}`);
-    return `user-${stdout}`
-
+const generateToken = async (range = 12) => {
+    const { stdout } = await exec(`openssl rand -hex ${range}`);
+    return stdout.toLowerCase().trim();
 }
 
 module.exports = {
