@@ -163,7 +163,7 @@ router.delete("/:id", checkHeaderConfig, async (req, res) => {
   } catch (e) {}
 });
 
-// // /// update Medicine
+//  update Medicine
 router.put("/:id", async (req, res) => {
   let updateMedicine;
   try {
