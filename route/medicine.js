@@ -43,7 +43,7 @@ router.post("/add", async (req, res) => {
 
     const newMedicine = await Medicine.create({ ...body });
     if (newMedicine) {
-      CachedMemoized[detechDevice] = true;
+      // CachedMemoized[detechDevice] = true;
       // await cached.del("medicinesCached");
       res.send(Response(200, "create medicine success"));
     } else {
@@ -56,9 +56,10 @@ router.post("/add", async (req, res) => {
 });
 
 // /// get list and search
-router.post("/full/s", checkHeaderConfig, async (req, res) => {
+router.post("/full/s", async (req, res) => {
   const name = req.body?.name || req.query?.name || "";
   const priceFrom = req.body?.priceFrom || req.query?.priceFrom || 0;
+  const pageNumber = req.body?.pageNumber || 0;
   const priceTo =
     req.body?.priceTo ||
     req.query?.priceTo ||
@@ -89,6 +90,9 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
   try {
     const response = await Medicine.aggregate([
       {
+        $skip: pageNumber * 30 
+      },
+      {
         $match: {
           $and: [
             {
@@ -106,16 +110,19 @@ router.post("/full/s", checkHeaderConfig, async (req, res) => {
       {
         $project: project,
       },
+      {
+        $limit: 30
+      },
     ]);
     console.log("response", response);
     if (response?.length > 0) {
-      const cachedKey = name + (priceFrom + "") + (priceTo + "");
+      const cachedKey = name + (priceFrom + "") + (priceTo + "") + (pageNumber + "");
       await cached.set(cachedKey, JSON.stringify(response), {
         EX: 86400,
         NX: true,
       });
       res.send(
-        Response(200, "Get Medicine success", { ...response, cachedKey })
+        Response(200, "Get Medicine success", { ...response, cachedKey, pageNumber: pageNumber + 1, pageLength: 30 })
       );
     } else {
       res.send(Response(400, "No Medicine found"));

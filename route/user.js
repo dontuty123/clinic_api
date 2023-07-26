@@ -222,7 +222,7 @@ router.put("/:id", checkHeaderConfig, getUser, async (req, res) => {
   }
 });
 
-// logout user
+// /// logout user
 router.post("/logout", checkHeaderConfig, getUser, async (req, res) => {
   const token = req.body.token;
   if (!token) {
@@ -230,7 +230,7 @@ router.post("/logout", checkHeaderConfig, getUser, async (req, res) => {
   }
   const delCached = await cached.del(token);
   if (delCached) {
-    res.send(Response(200, "Suceessfully", true));
+    res.send(Response(200, "Successfully", true));
   }
 });
 
