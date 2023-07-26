@@ -222,7 +222,7 @@ router.put("/:id", checkHeaderConfig, getUser, async (req, res) => {
   }
 });
 
-// /// update user
+// logout user
 router.post("/logout", checkHeaderConfig, getUser, async (req, res) => {
   const token = req.body.token;
   if (!token) {
